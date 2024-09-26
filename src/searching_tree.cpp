@@ -21,8 +21,8 @@ public:
         Iterator() : current_(nullptr) {}
 
         Iterator(Node* root) {
-            pushLeft(root);
-            advance();
+            PushLeft(root);
+            Advance();
         }
 
         bool operator!=(const Iterator& other) const {
@@ -55,7 +55,7 @@ public:
         }
 
         Iterator& operator++() {
-            advance();
+            Advance();
             return *this;
         }
 
@@ -63,14 +63,14 @@ public:
         std::stack<Node*> stack_;
         Node* current_;
 
-        void pushLeft(Node* node) {
+        void PushLeft(Node* node) {
             while (node) {
                 stack_.push(node);
                 node = node->left.get();
             }
         }
 
-        void advance() {
+        void Advance() {
             if (stack_.empty()) {
                 current_ = nullptr;
                 return;
@@ -78,7 +78,7 @@ public:
             current_ = stack_.top();
             stack_.pop();
             if (current_->right) {
-                pushLeft(current_->right.get());
+                PushLeft(current_->right.get());
             }
         }
 
@@ -94,7 +94,7 @@ public:
             RangeIterator() : current_(nullptr), a_(nullptr), b_(nullptr) {}
 
             RangeIterator(Node* node, const K& a, const K& b) : a_(&a), b_(&b) {
-                pushLeft(node);
+                PushLeft(node);
                 advanceToValid();
             }
 
@@ -135,7 +135,7 @@ public:
                 Node* node = stack_.top();
                 stack_.pop();
                 if (node->right) {
-                    pushLeft(node->right.get());
+                    PushLeft(node->right.get());
                 }
                 advanceToValid();
                 return *this;
@@ -147,7 +147,7 @@ public:
             const K* a_;
             const K* b_;
 
-            void pushLeft(Node* node) {
+            void PushLeft(Node* node) {
                 while (node) {
                     stack_.push(node);
                     node = node->left.get();
@@ -164,7 +164,7 @@ public:
                         break;
                     }
                     if (a_ && b_ && node->key < *b_ && node->right) {
-                        pushLeft(node->right.get());
+                        PushLeft(node->right.get());
                     }
                 }
             }
