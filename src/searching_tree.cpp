@@ -8,17 +8,17 @@ template <class K, class V>
 class SearchingTree {
 public:
     struct Node {
-        K key;
-        V value;
-        std::unique_ptr<Node> left;
-        std::unique_ptr<Node> right;
+        K Key;
+        V Value;
+        std::unique_ptr<Node> Left;
+        std::unique_ptr<Node> Right;
 
-        Node(const K& k, const V& v) : key(k), value(v), left(nullptr), right(nullptr) {}
+        Node(const K& k, const V& v) : Key(k), Value(v), Left(nullptr), Right(nullptr) {}
     };
 
     class Iterator {
     public:
-        Iterator() : current_(nullptr) {}
+        Iterator() : Current(nullptr) {}
 
         Iterator(Node* root) {
             PushLeft(root);
@@ -26,32 +26,26 @@ public:
         }
 
         bool operator!=(const Iterator& other) const {
-            return current_ != other.current_;
+            return Current != other.Current;
         }
 
         bool operator==(const Iterator& other) const {
-            return current_ == other.current_;
+            return Current == other.Current;
         }
 
-        std::pair<const K&, V&> operator*() const {
-            if (current_ == nullptr) {
+        std::pair<K, V> operator*() const {
+            if (Current == nullptr) {
                 throw std::out_of_range("Iterator out of range");
             }
-            return {current_->key, current_->value};
+            return {Current->Key, Current->Value};
         }
 
-        struct Proxy {
-            std::pair<const K&, V&> pair;
-
-            Proxy(const std::pair<const K&, V&>& p) : pair(p) {}
-
-            std::pair<const K&, V&>* operator->() const {
-                return const_cast<std::pair<const K&, V&>*>(&pair);
+        std::pair<K, V>* operator->() {
+            if (Current == nullptr) {
+                throw std::out_of_range("Iterator out of range");
             }
-        };
-
-        Proxy operator->() const {
-            return Proxy(operator*());
+            Pair = {Current->Key, Current->Value};
+            return &Pair;
         }
 
         Iterator& operator++() {
@@ -60,25 +54,26 @@ public:
         }
 
     private:
-        std::stack<Node*> stack_;
-        Node* current_;
+        std::stack<Node*> Stack;
+        Node* Current;
+        std::pair<K, V> Pair;
 
         void PushLeft(Node* node) {
             while (node) {
-                stack_.push(node);
-                node = node->left.get();
+                Stack.push(node);
+                node = node->Left.get();
             }
         }
 
         void Advance() {
-            if (stack_.empty()) {
-                current_ = nullptr;
+            if (Stack.empty()) {
+                Current = nullptr;
                 return;
             }
-            current_ = stack_.top();
-            stack_.pop();
-            if (current_->right) {
-                PushLeft(current_->right.get());
+            Current = Stack.top();
+            Stack.pop();
+            if (Current->Right) {
+                PushLeft(Current->Right.get());
             }
         }
 
@@ -87,84 +82,79 @@ public:
 
     class Range {
     public:
-        Range(const SearchingTree& tree, const K& a, const K& b) : tree_(tree), a_(a), b_(b) {}
+        Range(const SearchingTree& tree, const K& a, const K& b) : Tree(tree), A(a), B(b) {}
 
         class RangeIterator {
         public:
-            RangeIterator() : current_(nullptr), a_(nullptr), b_(nullptr) {}
+            RangeIterator() : Current(nullptr), A(nullptr), B(nullptr) {}
 
-            RangeIterator(Node* node, const K& a, const K& b) : a_(&a), b_(&b) {
+            RangeIterator(Node* node, const K& a, const K& b) : A(&a), B(&b) {
                 PushLeft(node);
-                advanceToValid();
+                AdvanceToValid();
             }
 
             bool operator!=(const RangeIterator& other) const {
-                return current_ != other.current_;
+                return Current != other.Current;
             }
 
             bool operator==(const RangeIterator& other) const {
-                return current_ == other.current_;
+                return Current == other.Current;
             }
 
-            std::pair<const K&, V&> operator*() const {
-                if (current_ == nullptr) {
+            std::pair<K, V> operator*() const {
+                if (Current == nullptr) {
                     throw std::out_of_range("Iterator out of range");
                 }
-                return {current_->key, current_->value};
+                return {Current->Key, Current->Value};
             }
 
-            struct Proxy {
-                std::pair<const K&, V&> pair;
-
-                Proxy(const std::pair<const K&, V&>& p) : pair(p) {}
-
-                std::pair<const K&, V&>* operator->() const {
-                    return const_cast<std::pair<const K&, V&>*>(&pair);
+            std::pair<K, V>* operator->() {
+                if (Current == nullptr) {
+                    throw std::out_of_range("Iterator out of range");
                 }
-            };
-
-            Proxy operator->() const {
-                return Proxy(operator*());
+                Pair = {Current->Key, Current->Value};
+                return &Pair;
             }
 
             RangeIterator& operator++() {
-                if (stack_.empty()) {
-                    current_ = nullptr;
+                if (Stack.empty()) {
+                    Current = nullptr;
                     return *this;
                 }
-                Node* node = stack_.top();
-                stack_.pop();
-                if (node->right) {
-                    PushLeft(node->right.get());
+                Node* node = Stack.top();
+                Stack.pop();
+                if (node->Right) {
+                    PushLeft(node->Right.get());
                 }
-                advanceToValid();
+                AdvanceToValid();
                 return *this;
             }
 
         private:
-            std::stack<Node*> stack_;
-            Node* current_;
-            const K* a_;
-            const K* b_;
+            std::stack<Node*> Stack;
+            Node* Current;
+            const K* A;
+            const K* B;
+            std::pair<K, V> Pair;
 
             void PushLeft(Node* node) {
                 while (node) {
-                    stack_.push(node);
-                    node = node->left.get();
+                    Stack.push(node);
+                    node = node->Left.get();
                 }
             }
 
-            void advanceToValid() {
-                current_ = nullptr;
-                while (!stack_.empty()) {
-                    Node* node = stack_.top();
-                    stack_.pop();
-                    if (a_ && b_ && *a_ <= node->key && node->key < *b_) {
-                        current_ = node;
+            void AdvanceToValid() {
+                Current = nullptr;
+                while (!Stack.empty()) {
+                    Node* node = Stack.top();
+                    Stack.pop();
+                    if (A && B && *A <= node->Key && node->Key < *B) {
+                        Current = node;
                         break;
                     }
-                    if (a_ && b_ && node->key < *b_ && node->right) {
-                        PushLeft(node->right.get());
+                    if (A && B && node->Key < *B && node->Right) {
+                        PushLeft(node->Right.get());
                     }
                 }
             }
@@ -173,7 +163,7 @@ public:
         };
 
         RangeIterator begin() const {
-            return RangeIterator(tree_.root_.get(), a_, b_);
+            return RangeIterator(Tree.Root.get(), A, B);
         }
 
         RangeIterator end() const {
@@ -181,32 +171,32 @@ public:
         }
 
     private:
-        const SearchingTree& tree_;
-        K a_;
-        K b_;
+        const SearchingTree& Tree;
+        K A;
+        K B;
     };
 
     Range range(const K& a, const K& b) const {
         return Range(*this, a, b);
     }
 
-    SearchingTree() : root_(nullptr) {}
+    SearchingTree() : Root(nullptr) {}
 
     void Insert(const K& key, const V& value) {
-        root_ = Split(std::move(root_), key, value);
+        Root = Split(std::move(Root), key, value);
     }
 
     void Erase(const K& key) {
-        root_ = Merge(std::move(root_), key);
+        Root = Merge(std::move(Root), key);
     }
 
     Iterator Find(const K& key) const {
-        Node* current = root_.get();
+        Node* current = Root.get();
         while (current) {
-            if (key < current->key) {
-                current = current->left.get();
-            } else if (current->key < key) {
-                current = current->right.get();
+            if (key < current->Key) {
+                current = current->Left.get();
+            } else if (current->Key < key) {
+                current = current->Right.get();
             } else {
                 return Iterator(current);
             }
@@ -215,7 +205,7 @@ public:
     }
 
     Iterator begin() const {
-        return Iterator(root_.get());
+        return Iterator(Root.get());
     }
 
     Iterator end() const {
@@ -223,58 +213,58 @@ public:
     }
 
 private:
-    std::unique_ptr<Node> root_;
+    std::unique_ptr<Node> Root;
 
     std::unique_ptr<Node> Split(std::unique_ptr<Node> node, const K& key, const V& value) {
         if (!node) {
             return std::make_unique<Node>(key, value);
         }
-        if (key < node->key) {
-            node->left = Split(std::move(node->left), key, value);
-        } else if (node->key < key) {
-            node->right = Split(std::move(node->right), key, value);
+        if (key < node->Key) {
+            node->Left = Split(std::move(node->Left), key, value);
+        } else if (node->Key < key) {
+            node->Right = Split(std::move(node->Right), key, value);
         }
         return node;
     }
 
     std::unique_ptr<Node> Merge(std::unique_ptr<Node> node, const K& key) {
         if (!node) return node;
-        if (key < node->key) {
-            node->left = Merge(std::move(node->left), key);
-        } else if (node->key < key) {
-            node->right = Merge(std::move(node->right), key);
+        if (key < node->Key) {
+            node->Left = Merge(std::move(node->Left), key);
+        } else if (node->Key < key) {
+            node->Right = Merge(std::move(node->Right), key);
         } else {
-            if (!node->left) {
-                return std::move(node->right);
+            if (!node->Left) {
+                return std::move(node->Right);
             }
-            if (!node->right) {
-                return std::move(node->left);
+            if (!node->Right) {
+                return std::move(node->Left);
             }
-            Node* minNode = FindMin(node->right.get());
-            node->key = minNode->key;
-            node->value = minNode->value;
-            node->right = Merge(std::move(node->right), minNode->key);
+            Node* minNode = FindMin(node->Right.get());
+            node->Key = minNode->Key;
+            node->Value = minNode->Value;
+            node->Right = Merge(std::move(node->Right), minNode->Key);
         }
         return node;
     }
 
     Node* FindMin(Node* node) const {
-        while (node->left) {
-            node = node->left.get();
+        while (node->Left) {
+            node = node->Left.get();
         }
         return node;
     }
 
-    void InOrderRange(Node* node, const K& a, const K& b, std::vector<std::pair<const K&, V&>>& result) const {
+    void InOrderRange(Node* node, const K& a, const K& b, std::vector<std::pair<K, V>>& result) const {
         if (!node) return;
-        if (a < node->key) {
-            InOrderRange(node->left.get(), a, b, result);
+        if (a < node->Key) {
+            InOrderRange(node->Left.get(), a, b, result);
         }
-        if (a <= node->key && node->key < b) {
-            result.emplace_back(node->key, node->value);
+        if (a <= node->Key && node->Key < b) {
+            result.emplace_back(node->Key, node->Value);
         }
-        if (node->key < b) {
-            InOrderRange(node->right.get(), a, b, result);
+        if (node->Key < b) {
+            InOrderRange(node->Right.get(), a, b, result);
         }
     }
 };
